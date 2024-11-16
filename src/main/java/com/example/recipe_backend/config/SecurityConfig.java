@@ -11,11 +11,14 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.firewall.HttpFirewall;
+import org.springframework.security.web.firewall.StrictHttpFirewall;
 
 @Configuration
 @EnableWebSecurity
@@ -32,19 +35,22 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .csrf(csrf -> csrf.disable()) // Disable CSRF for APIs (stateless setup)
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session management
             .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()  // Allow access to login and register endpoints
-                .requestMatchers("/api/recipes/**").authenticated()  // Protect recipe endpoints
-                .anyRequest().authenticated()
+                // Public endpoints
+                .requestMatchers("/api/auth/login", "/api/auth/register", "/user-login", "/login-page").permitAll() 
+                .requestMatchers("/api/recipes").permitAll() // Public access to recipes
+                // Private endpoints (require authentication)
+                .requestMatchers("/recipes/details", "/recipe/details/**", "/api/recipes/details/**").authenticated()
+                .anyRequest().authenticated() // All other routes require authentication
             )
+            // Add JWT filter for handling authentication
             .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
@@ -62,5 +68,17 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    @Bean
+    public HttpFirewall allowUrlEncodedPercentHttpFirewall() {
+        StrictHttpFirewall firewall = new StrictHttpFirewall();
+        firewall.setAllowUrlEncodedPercent(true);  // Allow URLs to contain encoded '%' characters
+        return firewall;
+    }
+    
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return web -> web.httpFirewall(allowUrlEncodedPercentHttpFirewall());
     }
 }
