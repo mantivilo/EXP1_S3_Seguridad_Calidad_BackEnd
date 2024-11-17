@@ -33,17 +33,17 @@ public class AuthController {
     public Map<String, String> login(@RequestBody Map<String, String> credentials) {
         String username = credentials.get("username");
         String password = credentials.get("password");
-
+    
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
-            String token = jwtUtil.generateToken(username);
+            String token = jwtUtil.generateToken(username); // Token generated here
             Map<String, String> response = new HashMap<>();
-            response.put("token", token);
-            return response;
+            response.put("token", token); // Token returned in response
+            return response; // Ensure this is working as expected
         } catch (AuthenticationException e) {
             throw new RuntimeException("Invalid credentials");
         }
-    }
+    }    
 
     @PostMapping("/register")
     public Map<String, String> register(@RequestBody Map<String, String> userData) {

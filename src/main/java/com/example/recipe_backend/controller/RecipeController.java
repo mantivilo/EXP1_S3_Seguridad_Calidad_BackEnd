@@ -1,8 +1,10 @@
 package com.example.recipe_backend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.example.recipe_backend.model.Recipe;
@@ -26,7 +28,14 @@ public class RecipeController {
 
     // Private endpoint for recipe details (requires authentication)
     @GetMapping("/details")
-    public List<Recipe> getAllRecipeDetails() {
-        return recipeRepository.findAll(); // Fetches all recipe details
+    public List<Recipe> getAllRecipeDetails(@RequestHeader HttpHeaders headers) {
+        String authorizationHeader = headers.getFirst("Authorization");
+        System.out.println("Authorization Header Received: " + authorizationHeader);
+
+        List<Recipe> recipes = recipeRepository.findAll();
+        System.out.println("Recipes fetched: " + recipes);
+
+        return recipes;
     }
+
 }

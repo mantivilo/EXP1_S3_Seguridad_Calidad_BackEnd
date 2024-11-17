@@ -35,22 +35,25 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for APIs (stateless setup)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session management
+            .csrf(csrf -> csrf.disable()) // Disable CSRF for APIs
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless
             .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                 // Public endpoints
-                .requestMatchers("/api/auth/login", "/api/auth/register", "/user-login", "/login-page").permitAll() 
-                .requestMatchers("/api/recipes").permitAll() // Public access to recipes
-                // Private endpoints (require authentication)
-                .requestMatchers("/recipes/details", "/recipe/details/**", "/api/recipes/details/**").authenticated()
-                .anyRequest().authenticated() // All other routes require authentication
-            )
-            // Add JWT filter for handling authentication
-            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
+                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                .requestMatchers("/api/recipes").permitAll()
+                // Private endpoints
+                .requestMatchers("/api/recipes/details", "/api/recipes/details/**").authenticated()
+                .anyRequest().authenticated()
+            ).formLogin(form -> form
+            .loginPage("/user-login") // Specify the login page
+            .defaultSuccessUrl("/recipes/details", true) // Redirect here on successful login
+            .failureUrl("/user-login?error=true") // Redirect to login with an error on failure
+            .permitAll()
+            )    
+            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class); // JWT Filter
 
         return http.build();
     }
-
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
@@ -73,10 +76,10 @@ public class SecurityConfig {
     @Bean
     public HttpFirewall allowUrlEncodedPercentHttpFirewall() {
         StrictHttpFirewall firewall = new StrictHttpFirewall();
-        firewall.setAllowUrlEncodedPercent(true);  // Allow URLs to contain encoded '%' characters
+        firewall.setAllowUrlEncodedPercent(true); // Allow URLs to contain encoded '%' characters
         return firewall;
     }
-    
+
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
         return web -> web.httpFirewall(allowUrlEncodedPercentHttpFirewall());
