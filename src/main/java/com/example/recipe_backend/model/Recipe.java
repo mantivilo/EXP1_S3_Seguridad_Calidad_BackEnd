@@ -37,8 +37,7 @@ public class Recipe {
     private String imageUrl; // URL for the recipe image (optional)
 
     // Default constructor
-    public Recipe() {
-    }
+    public Recipe() {}
 
     // Constructor with all fields
     public Recipe(String name, String type, String ingredients, String country, String difficulty, String instructions, String imageUrl) {
@@ -49,6 +48,12 @@ public class Recipe {
         this.difficulty = difficulty;
         this.instructions = instructions;
         this.imageUrl = imageUrl;
+    }
+
+    // Constructor for id and name only
+    public Recipe(Long id, String name) {
+        this.id = id;
+        this.name = name;
     }
 
     // Getters and Setters

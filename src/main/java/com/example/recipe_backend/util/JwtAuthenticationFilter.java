@@ -24,29 +24,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        String requestPath = request.getRequestURI();
-
-        // Skip filter for login and registration paths
-        if (requestPath.equals("/api/auth/login") || requestPath.equals("/api/auth/register")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        // Token validation logic
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
         String jwt = getJwtFromRequest(request);
+        System.out.println("JWT Token Received: " + jwt);
+
         if (jwt != null && jwtUtil.validateToken(jwt)) {
             String username = jwtUtil.getUsernameFromToken(jwt);
-
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    username, null, new ArrayList<>()); // Replace new ArrayList<>() with actual authorities if needed
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(username, null, new ArrayList<>());
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }
 
         filterChain.doFilter(request, response);
     }
+
 
     private String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");

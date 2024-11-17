@@ -3,6 +3,9 @@ package com.example.recipe_backend.config;
 import com.example.recipe_backend.service.CustomUserDetailsService;
 import com.example.recipe_backend.util.JwtAuthenticationFilter;
 import com.example.recipe_backend.util.JwtUtil;
+
+import javax.servlet.http.HttpServletResponse;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -36,24 +39,25 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable()) // Disable CSRF for APIs
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless
-            .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session
+            .authorizeHttpRequests(authorize -> authorize
                 // Public endpoints
-                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
-                .requestMatchers("/api/recipes").permitAll()
-                // Private endpoints
-                .requestMatchers("/api/recipes/details", "/api/recipes/details/**").authenticated()
+                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/recipes").permitAll()
+                // Secure endpoints
+                .requestMatchers("/api/recipes/details").authenticated()
+                // Fallback
                 .anyRequest().authenticated()
-            ).formLogin(form -> form
-            .loginPage("/user-login") // Specify the login page
-            .defaultSuccessUrl("/recipes/details", true) // Redirect here on successful login
-            .failureUrl("/user-login?error=true") // Redirect to login with an error on failure
-            .permitAll()
-            )    
-            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class); // JWT Filter
+            )
+            .exceptionHandling(exception -> exception
+                // Return 403 instead of redirecting to login for unauthorized requests
+                .authenticationEntryPoint((request, response, authException) -> 
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access Denied"))
+            )
+            .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 
     @Bean
     public AuthenticationProvider authenticationProvider() {

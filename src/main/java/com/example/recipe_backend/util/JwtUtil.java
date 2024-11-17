@@ -25,8 +25,14 @@ public class JwtUtil {
     }
 
     // Validate the token
-    public Boolean validateToken(String token) {
-        return !isTokenExpired(token);
+    public boolean validateToken(String token) {
+        try {
+            Claims claims = extractAllClaims(token);
+            return !isTokenExpired(token);
+        } catch (Exception e) {
+            System.out.println("Error validating token: " + e.getMessage());
+            return false;
+        }
     }
 
     // Generate a new token with a username as the subject
@@ -43,11 +49,15 @@ public class JwtUtil {
 
     // Extract all claims from the token
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                   .setSigningKey(SECRET_KEY)
-                   .build()
-                   .parseClaimsJws(token)
-                   .getBody();
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(SECRET_KEY) // Ensure this is your actual signing key
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid or expired token: " + e.getMessage());
+        }
     }
 
     // Check if the token is expired
